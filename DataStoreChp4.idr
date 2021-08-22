@@ -14,12 +14,6 @@ data Command : Type where
   Search : (item : String) -> Command
   Get    : (idx  :    Nat) -> Command
 
-size : DataStore -> Nat
-size (MkData size' _) = size'
-
-items : (store : DataStore) -> Vect (size store) String
-items (MkData _ items') = items'
-
 addToStore : DataStore -> String -> DataStore
 addToStore (MkData size items) y = MkData (size + 1) (items ++ [y])
 
@@ -38,16 +32,16 @@ parse : String -> Maybe Command
 parse = (\ (cmd, args) => parseCommand cmd (ltrim args)) . span (/= ' ')
 
 getEntry : Nat -> DataStore -> Maybe (String, DataStore)
-getEntry idx store = 
-  case natToFin idx (size store) of
-    Nothing => Just ("Out of range\n", store)
-    Just  m => Just (index m (items store) ++ "\n", store)
+getEntry idx ds@(MkData size items) =
+  case natToFin idx size of
+    Nothing => Just ("Out of range\n", ds)
+    Just  m => Just (index m items ++ "\n", ds)
 
 searchEntry : String -> DataStore -> Maybe (String, DataStore)
-searchEntry item store =
-  case fst (foldl go ("", 0) (items store)) of
-    ""   => Just ("No results found\n", store)
-    hits => Just (hits, store)
+searchEntry item ds@(MkData _ items) =
+  case fst (foldl go ("", 0) items) of
+    ""   => Just ("No results found\n", ds)
+    hits => Just (hits, ds)
   where
     go : (String, Nat) -> String -> (String, Nat)
     go (hits, n) possibleHit =
@@ -56,14 +50,14 @@ searchEntry item store =
         True  => (hits ++ show n ++ ": " ++ possibleHit ++ "\n", n+1)
 
 processInput : DataStore -> String -> Maybe (String, DataStore)
-processInput store inp =
+processInput ds@(MkData size items) inp =
   case parse inp of
-    Nothing            => Just ("Invalid command\n", store)
+    Nothing            => Just ("Invalid command\n", ds)
     Just (Quit       ) => Nothing
-    Just (Size       ) => Just (show (size store) ++ "\n", store)
-    Just (Add    item) => Just ("ID " ++ show (size store) ++ "\n", addToStore store item)
-    Just (Search item) => searchEntry item store
-    Just (Get     idx) => getEntry idx store
+    Just (Size       ) => Just (show size ++ "\n", ds)
+    Just (Add    item) => Just ("ID " ++ show size ++ "\n", addToStore ds item)
+    Just (Search item) => searchEntry item ds
+    Just (Get     idx) => getEntry idx ds
 
 partial main : IO ()
 main = replWith (MkData _ []) "Command: " processInput
