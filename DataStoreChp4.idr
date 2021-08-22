@@ -1,4 +1,4 @@
-module DataStore
+module DataStoreChp4
 
 import Data.Vect
 
@@ -8,8 +8,8 @@ data DataStore : Type where
   MkData : (size : Nat) -> (items : Vect size String) -> DataStore
 
 data Command : Type where
-  Quit   :                   Command
-  Size   :                   Command
+  Quit   :                    Command
+  Size   :                    Command
   Add    : (item : String) -> Command
   Search : (item : String) -> Command
   Get    : (idx  :    Nat) -> Command
