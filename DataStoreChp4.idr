@@ -1,4 +1,4 @@
-module DataStoreChp4
+module Main
 
 import Data.Vect
 
@@ -31,23 +31,23 @@ parseCommand _ _ = Nothing
 parse : String -> Maybe Command
 parse = (\ (cmd, args) => parseCommand cmd (ltrim args)) . span (/= ' ')
 
-getEntry : Nat -> DataStore -> Maybe (String, DataStore)
+getEntry : Nat -> DataStore -> (String, DataStore)
 getEntry idx ds@(MkData size items) =
   case natToFin idx size of
-    Nothing => Just ("Out of range\n", ds)
-    Just  m => Just (index m items ++ "\n", ds)
+    Nothing => ("Out of range\n", ds)
+    Just  m => (index m items ++ "\n", ds)
 
-searchEntry : String -> DataStore -> Maybe (String, DataStore)
-searchEntry item ds@(MkData _ items) =
-  case fst (foldl go ("", 0) items) of
-    ""   => Just ("No results found\n", ds)
-    hits => Just (hits, ds)
-  where
-    go : (String, Nat) -> String -> (String, Nat)
-    go (hits, n) possibleHit =
-      case Strings.isInfixOf item possibleHit of
-        False => (hits, n+1)
-        True  => (hits ++ show n ++ ": " ++ possibleHit ++ "\n", n+1)
+searchEntry : String -> DataStore -> (String, DataStore)
+searchEntry item ds@(MkData size items) =
+  if isNil hits
+    then ("No results found\n", ds)
+    else (unlines hits ++ "\n", ds)
+where
+  indexHits : List (Fin size)
+  indexHits = elemIndicesBy Strings.isInfixOf item items
+
+  hits : List String
+  hits = map (\idx => show (finToNat idx) ++ ": " ++ index idx items) indexHits
 
 processInput : DataStore -> String -> Maybe (String, DataStore)
 processInput ds@(MkData size items) inp =
@@ -56,8 +56,8 @@ processInput ds@(MkData size items) inp =
     Just (Quit       ) => Nothing
     Just (Size       ) => Just (show size ++ "\n", ds)
     Just (Add    item) => Just ("ID " ++ show size ++ "\n", addToStore ds item)
-    Just (Search item) => searchEntry item ds
-    Just (Get     idx) => getEntry idx ds
+    Just (Search item) => Just (searchEntry item ds)
+    Just (Get     idx) => Just (getEntry idx ds)
 
 partial main : IO ()
 main = replWith (MkData _ []) "Command: " processInput
