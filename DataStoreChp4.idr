@@ -29,11 +29,12 @@ searchEntry item ds@(MkData size items) =
     then ("No results found\n", ds)
     else (unlines hits ++ "\n", ds)
 where
-  indexHits : List (Fin size)
-  indexHits = elemIndicesBy Strings.isInfixOf item items
-
   hits : List String
-  hits = map (\idx => show (finToNat idx) ++ ": " ++ index idx items) indexHits
+  hits = map (\ (idx, item) => show (finToNat idx) ++ ": " ++ item)
+       . filter ((==) item . snd) -- Keep only entries with matching values
+       . toList -- Convert to a list to avoid a dependent pair
+       . zip range -- Attach indices
+       $ items
 
 parseCommand : String -> String -> Maybe Command
 parseCommand "quit"   ""   = Just (Quit       )
