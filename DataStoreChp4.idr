@@ -15,21 +15,7 @@ data Command : Type where
   Get    : (idx  :    Nat) -> Command
 
 addToStore : DataStore -> String -> DataStore
-addToStore (MkData size items) y = MkData (size + 1) (items ++ [y])
-
-parseCommand : String -> String -> Maybe Command
-parseCommand "quit"   ""   = Just (Quit       )
-parseCommand "size"   ""   = Just (Size       )
-parseCommand "add"    item = Just (Add    item)
-parseCommand "search" item = Just (Search item)
-parseCommand "get"    idx  =
-  case all isDigit (unpack idx) of
-    False => Nothing
-    True  => Just (Get (cast idx))
-parseCommand _ _ = Nothing
-
-parse : String -> Maybe Command
-parse = (\ (cmd, args) => parseCommand cmd (ltrim args)) . span (/= ' ')
+addToStore (MkData _ items) y = MkData _ (items ++ [y])
 
 getEntry : Nat -> DataStore -> (String, DataStore)
 getEntry idx ds@(MkData size items) =
@@ -49,8 +35,22 @@ where
   hits : List String
   hits = map (\idx => show (finToNat idx) ++ ": " ++ index idx items) indexHits
 
+parseCommand : String -> String -> Maybe Command
+parseCommand "quit"   ""   = Just (Quit       )
+parseCommand "size"   ""   = Just (Size       )
+parseCommand "add"    item = Just (Add    item)
+parseCommand "search" item = Just (Search item)
+parseCommand "get"    idx  =
+  case all isDigit (unpack idx) of
+    False => Nothing
+    True  => Just (Get (cast idx))
+parseCommand _ _ = Nothing
+
+parse : String -> Maybe Command
+parse = (\ (cmd, args) => parseCommand cmd (ltrim args)) . span (/= ' ')
+
 processInput : DataStore -> String -> Maybe (String, DataStore)
-processInput ds@(MkData size items) inp =
+processInput ds@(MkData size _) inp =
   case parse inp of
     Nothing            => Just ("Invalid command\n", ds)
     Just (Quit       ) => Nothing
